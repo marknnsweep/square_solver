@@ -1,10 +1,14 @@
+#include <queue>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <vector>
 #include <iostream>
 #include <istream>
 #include <ostream>
 #include <sstream>
 #include <string>
 #include <memory>
-#include <vector>
 #include <cmath>
 #include <tuple>
 #include <algorithm>
@@ -112,9 +116,6 @@ public:
         bool operator!=(const Iterator& other) const {
             return current != other.current;
         }
-        bool operator==(const Iterator& other) const {
-            return current == other.current;
-        }
 
     private:
         static std::optional<int> parseInteger(const std::string& s) {
@@ -142,7 +143,6 @@ public:
                 }
                 ++current;
             }
-            --current;
 
             current_tuple = std::make_tuple(a, b, c);
         }
@@ -163,22 +163,97 @@ public:
     }
 };
 
+class Task {
+public:
+    virtual ~Task() = default;
+    virtual void execute() = 0;
+};
+
+class SolveTask : public Task {
+private:
+    int a, b, c;
+    QuadraticEquation<int, double>::Solution solution;
+
+public:
+    SolveTask(int a, int b, int c) : a(a), b(b), c(c) {}
+
+    void execute() override {
+        QuadraticEquation<int, double> equation(a, b, c);
+        solution = equation.solve();
+    }
+
+    QuadraticEquation<int, double>::Solution getSolution() const {
+        return solution;
+    }
+};
+
+class OutputTask : public Task {
+private:
+    QuadraticEquation<int, double>::Solution solution;
+
+public:
+    OutputTask(const QuadraticEquation<int, double>::Solution& solution) : solution(solution) {}
+
+    void execute() override {
+    }
+};
+
+template<T>
+class CQueue {
+private:
+  std::queue<T> queue;
+
+public:
+    CQueue() {
+    }
+
+    void enqueue(T task);
+
+    bool dequeue(T& task);
+    
+    void setDone();
+};
+
 class Application {
 private:
     std::ostream& output;
     InputData& inputData;
+    std::queue<SolveTask> solveTaskQueue;
+    std::queue<OutputTask> outputTaskQueue;
 
 public:
     Application(InputData& data, std::ostream& out) : inputData(data), output(out) {}
 
-    void run() {
+    void produce() {
         for (auto it = inputData.begin(); it != inputData.end(); ++it) {
             const auto& [a, b, c] = *it;
-            QuadraticEquation<int, double> task(a, b, c);
-            output << task.solve() << std::endl;
+            solveTaskQueue.emplace(a, b, c);
         }
     }
+
+    void processQueue(std::queue<TaskType>& taskQueue) {
+        while (!taskQueue.empty()) {
+            TaskType task = std::move(taskQueue.front());
+            taskQueue.pop();
+            task.execute(output);
+        }
+    }
+    
+    void consumeSolve() {
+        processQueue(solveTaskQueue);
+    }
+    
+    void consumeOutput() {
+        processQueue(outputTaskQueue);
+    }
+
+    void run() {
+        produce();
+        consumeSolve();
+        consumeOutput();
+    }
 };
+
 
 int main(int argc, char* argv[]) {
     InputData data(argv, argc);
