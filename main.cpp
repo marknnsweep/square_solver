@@ -143,6 +143,7 @@ public:
                 }
                 ++current;
             }
+            --current;
 
             current_tuple = std::make_tuple(a, b, c);
         }
@@ -163,94 +164,150 @@ public:
     }
 };
 
-class Task {
-public:
-    virtual ~Task() = default;
-    virtual void execute() = 0;
-};
-
-class SolveTask : public Task {
-private:
-    int a, b, c;
-    QuadraticEquation<int, double>::Solution solution;
-
-public:
-    SolveTask(int a, int b, int c) : a(a), b(b), c(c) {}
-
-    void execute() override {
-        QuadraticEquation<int, double> equation(a, b, c);
-        solution = equation.solve();
-    }
-
-    QuadraticEquation<int, double>::Solution getSolution() const {
-        return solution;
-    }
-};
-
-class OutputTask : public Task {
-private:
-    QuadraticEquation<int, double>::Solution solution;
-
-public:
-    OutputTask(const QuadraticEquation<int, double>::Solution& solution) : solution(solution) {}
-
-    void execute() override {
-    }
-};
-
-template<T>
+template <typename T>
 class CQueue {
 private:
-  std::queue<T> queue;
+    std::queue<T> queue;
+    mutable std::mutex mtx;
+    std::condition_variable cv;
+    bool done = false;
 
 public:
-    CQueue() {
+    CQueue() = default;
+    ~CQueue() = default;
+
+    // Add an item to the queue
+    void enqueue(const T& item) {
+        std::lock_guard<std::mutex> lock(mtx);
+        queue.push(item);
+        cv.notify_one();
     }
 
-    void enqueue(T task);
+    void enqueue(T&& item) {
+        std::lock_guard<std::mutex> lock(mtx);
+        queue.push(std::move(item));
+        cv.notify_one();
+    }
 
-    bool dequeue(T& task);
+    // Emplace an item directly in the queue
+    template <typename... Args>
+    void emplace(Args&&... args) {
+        std::lock_guard<std::mutex> lock(mtx);
+        queue.emplace(std::forward<Args>(args)...);
+        cv.notify_one();
+    }
+
+    // Remove and return the front item from the queue
+    bool dequeue(T& item) {
+        std::unique_lock<std::mutex> lock(mtx);
+        cv.wait(lock, [this] { return !queue.empty() || done; });
+        if (queue.empty()) {
+            return false;
+        }
+        item = std::move(queue.front());
+        queue.pop();
+        return true;
+    }
+
+    // Mark the queue as done
+    void setDone() {
+        std::lock_guard<std::mutex> lock(mtx);
+        done = true;
+        cv.notify_all();
+    }
+
+    // Check if the queue is empty
+    bool empty() const {
+        std::lock_guard<std::mutex> lock(mtx);
+        return queue.empty();
+    }
+
+    // Get the size of the queue
+    size_t size() const {
+        std::lock_guard<std::mutex> lock(mtx);
+        return queue.size();
+    }
+
+    // Check if the queue is done
+    bool isDone() const {
+        std::lock_guard<std::mutex> lock(mtx);
+        return done;
+    }
+};
+
+class Printer {
+private:
+    std::ostream& output;
+    CQueue<QuadraticEquation<int, double>::Solution>& outputQueue;
+
+public:
+    Printer(std::ostream& output, CQueue<QuadraticEquation<int, double>::Solution>& outputQueue) : output(output), outputQueue(outputQueue) {}
+
+    void run() {
+        QuadraticEquation<int, double>::Solution task;
+        while (outputQueue.dequeue(task)) {
+            output << task << std::endl;
+        }
+    }
+};
+
+class Producer {
+private:
+    InputData& inputData;
+    CQueue<std::tuple<int,int,int>>& inputQueue;
+
+public:
+    Producer(InputData& inputData, CQueue<std::tuple<int,int,int>>& inputQueue) : inputData(inputData), inputQueue(inputQueue) {}
     
-    void setDone();
+    void run() {
+        for (auto it = inputData.begin(); it != inputData.end(); ++it) {
+            inputQueue.emplace(*it);
+        }
+        inputQueue.setDone();
+    }
+};
+
+class Solver {
+private:
+    CQueue<std::tuple<int,int,int>>& inputQueue;
+    CQueue<QuadraticEquation<int, double>::Solution>& outputQueue;
+
+public:
+    Solver(CQueue<std::tuple<int,int,int>>& inputQueue, CQueue<QuadraticEquation<int, double>::Solution>& outputQueue) : inputQueue(inputQueue), outputQueue(outputQueue) {}
+    
+    void run() {
+        std::tuple<int,int,int> task;
+        while (inputQueue.dequeue(task)) {
+            const auto& [a, b, c] = task;
+            QuadraticEquation<int, double> eq(a, b, c);
+            outputQueue.emplace(eq.solve());
+        }
+        outputQueue.setDone();
+    }
 };
 
 class Application {
 private:
     std::ostream& output;
     InputData& inputData;
-    std::queue<SolveTask> solveTaskQueue;
-    std::queue<OutputTask> outputTaskQueue;
+    CQueue<std::tuple<int,int,int>> inputQueue;
+    CQueue<QuadraticEquation<int, double>::Solution> outputQueue;
 
 public:
     Application(InputData& data, std::ostream& out) : inputData(data), output(out) {}
 
-    void produce() {
-        for (auto it = inputData.begin(); it != inputData.end(); ++it) {
-            const auto& [a, b, c] = *it;
-            solveTaskQueue.emplace(a, b, c);
-        }
-    }
-
-    void processQueue(std::queue<TaskType>& taskQueue) {
-        while (!taskQueue.empty()) {
-            TaskType task = std::move(taskQueue.front());
-            taskQueue.pop();
-            task.execute(output);
-        }
-    }
-    
-    void consumeSolve() {
-        processQueue(solveTaskQueue);
-    }
-    
-    void consumeOutput() {
-        processQueue(outputTaskQueue);
-    }
-
     void run() {
-        produce();
-        consumeSolve();
-        consumeOutput();
+        Producer producer(inputData, inputQueue);
+        Solver solver(inputQueue, outputQueue);
+        Printer printer(output, outputQueue);
+
+        std::thread producerThread([&] { producer.run(); });
+        std::thread solverThread([&] { solver.run(); });
+        std::thread printerThread([&] { printer.run(); });
+
+        producerThread.join();
+        solverThread.join();
+        printerThread.join();
     }
 };
 
