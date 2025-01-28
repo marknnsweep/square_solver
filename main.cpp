@@ -14,27 +14,80 @@
 #include <algorithm>
 #include <cctype>
 #include <optional>
+#include <vector>
+#include <tuple>
+#include <optional>
+#include <iterator>
+#include <type_traits>
+#include <stdexcept>
+#include <tuple>
+#include <optional>
+#include <iterator>
+#include <type_traits>
+#include <stdexcept>
+
+#if defined(__GNUC__) || defined(__clang__)
+    #define UNREACHABLE() __builtin_unreachable()
+#elif defined(_MSC_VER)
+    #define UNREACHABLE() __assume(false)
+#else
+    #define UNREACHABLE() std::abort()
+#endif
 
 template<typename IntType, typename FloatType>
 class QuadraticEquation {
+public:
+    using Coefficients = std::tuple<std::optional<IntType>, std::optional<IntType>, std::optional<IntType>>;
+    using Data = std::tuple<std::optional<std::string>, std::optional<std::string>, std::optional<std::string>>;
 private:
-    IntType a, b, c;
+    Coefficients coefficients;
+
+    static std::optional<int> parseInteger(const std::string& s) {
+        try {
+            return std::stoi(s);
+        } catch (...) {
+            return std::nullopt;
+        }
+    }
 
 public:
+
     struct Solution {
-        FloatType root1;
-        FloatType root2;
-        FloatType xmin;
+        Coefficients coefficients;
+        std::optional<FloatType> root1;
+        std::optional<FloatType> root2;
+        std::optional<FloatType> xmin;
         bool no_roots = false;
         bool no_real_roots = false;
         bool no_xmin = false;
         bool incorrect_input = false;
     };
 
-    QuadraticEquation(int a, int b, int c) : a(a), b(b), c(c) {}
+    // Constructor that converts vector of string tuples to Coefficients
+    QuadraticEquation(const Data& stringCoefficients) {
+        const auto& [a_str, b_str, c_str] = stringCoefficients;
+        coefficients = std::make_tuple(
+            a_str ? parseInteger(*a_str) : std::nullopt,
+            b_str ? parseInteger(*b_str) : std::nullopt,
+            c_str ? parseInteger(*c_str) : std::nullopt
+            );
+    }
 
     Solution solve() const {
         Solution solution;
+        solution.coefficients = coefficients;
+
+        // Check if all coefficients are valid
+        if (!std::get<0>(coefficients).has_value() ||
+            !std::get<1>(coefficients).has_value() ||
+            !std::get<2>(coefficients).has_value()) {
+            solution.incorrect_input = true;
+            return solution;
+        }
+
+        IntType a = std::get<0>(coefficients).value();
+        IntType b = std::get<1>(coefficients).value();
+        IntType c = std::get<2>(coefficients).value();
 
         if (a == 0) {
             if (b == 0) {
@@ -48,119 +101,50 @@ public:
             }
         }
 
-        IntType discriminant = static_cast<IntType>(b) * b - (static_cast<IntType>(a) * c << 2);
+        FloatType sum = -static_cast<FloatType>(b) / a;
+        FloatType product = static_cast<FloatType>(c) / a;
 
+        FloatType discriminant = sum * sum - 4 * product;
         if (discriminant < 0) {
-            solution.xmin = -static_cast<FloatType>(b) / (2 * a);
             solution.no_roots = true;
             solution.no_real_roots = true;
+            solution.xmin = -sum / 2;
             return solution;
         }
 
-        IntType sqrt_d = static_cast<IntType>(sqrt(discriminant));
-        if (sqrt_d * sqrt_d != discriminant) {
-            solution.xmin = -static_cast<FloatType>(b) / (2 * a);
-            solution.no_real_roots = true;
-            return solution;
-        }
-
-        IntType divisor = 2 * a;
-        FloatType root1 = (-b + sqrt_d) / static_cast<FloatType>(divisor);
-        FloatType root2 = (-b - sqrt_d) / static_cast<FloatType>(divisor);
-        solution.root1 = root1;
-        solution.root2 = root2;
-        solution.xmin = -static_cast<FloatType>(b) / (2 * a);
+        FloatType sqrt_d = std::sqrt(discriminant);
+        solution.root1 = (sum + sqrt_d) / 2;
+        solution.root2 = (sum - sqrt_d) / 2;
+        solution.xmin = -sum / 2;
 
         return solution;
     }
 
     friend std::ostream& operator<<(std::ostream& os, const Solution& solution) {
+        const auto& [a, b, c] = solution.coefficients;
+
+        // Output coefficients with missing values as empty spaces
+        os << "(";
+        os << (a.has_value() ? std::to_string(a.value()) : "");
+        os << ",";
+        os << (b.has_value() ? std::to_string(b.value()) : "");
+        os << ",";
+        os << (c.has_value() ? std::to_string(c.value()) : "");
+        os << ") => ";
+
+        // Output based on solution correctness
         if (solution.incorrect_input) {
-            os << "(inf, inf) Xmin=inf";
-        } else if (solution.no_xmin) {
-            os << "(" << solution.root1 << ", inf) Xmin=inf";
-        } else if (solution.no_roots) {
-            os << "(nan, nan) Xmin=" << solution.xmin;
+            os << "invalid input";
         } else {
-            os << "(" << solution.root1 << ", " << solution.root2 << ") Xmin=" << solution.xmin;
+            os << "(";
+            os << (solution.root1.has_value() ? std::to_string(solution.root1.value()) : "nan");
+            os << ", ";
+            os << (solution.root2.has_value() ? std::to_string(solution.root2.value()) : "nan");
+            os << ") Xmin=";
+            os << (solution.xmin.has_value() ? std::to_string(solution.xmin.value()) : "nan");
         }
+
         return os;
-    }
-};
-
-class InputData {
-public:
-    using Coefficients = std::tuple<int, int, int>;
-
-    class Iterator {
-    private:
-        std::vector<std::string>::iterator current;
-        std::vector<std::string>::iterator end;
-        Coefficients current_tuple;
-
-    public:
-        Iterator(std::vector<std::string>::iterator start, std::vector<std::string>::iterator finish) : current(start), end(finish) {
-            advance();
-        }
-
-        Coefficients operator*() const {
-            return current_tuple;
-        }
-
-        Iterator& operator++() {
-            ++current;
-            advance();
-            return *this;
-        }
-
-        bool operator!=(const Iterator& other) const {
-            return current != other.current;
-        }
-
-    private:
-        static std::optional<int> parseInteger(const std::string& s) {
-            try {
-                return std::stoi(s);
-            } catch (...) {
-                return std::nullopt;
-            }
-        }
-
-        void advance() {
-            if (current == end) {
-                return;
-            }
-
-            int a = 0, b = 0, c = 0;
-            int i = 0;
-            while (i < 3 && current != end) {
-                auto value = parseInteger(*current);
-                if (value) {
-                    if (i == 0) a = *value;
-                    else if (i == 1) b = *value;
-                    else if (i == 2) c = *value;
-                    ++i;
-                }
-                ++current;
-            }
-            --current;
-
-            current_tuple = std::make_tuple(a, b, c);
-        }
-    };
-
-private:
-    std::vector<std::string> arguments;
-
-public:
-    InputData(char* argv[], int argc) : arguments(argv + 1, argv + argc) {}
-
-    Iterator begin() {
-        return Iterator(arguments.begin(), arguments.end());
-    }
-
-    Iterator end() {
-        return Iterator(arguments.end(), arguments.end());
     }
 };
 
@@ -200,7 +184,7 @@ public:
     // Remove and return the front item from the queue
     bool dequeue(T& item) {
         std::unique_lock<std::mutex> lock(mtx);
-        cv.wait(lock, [this] { return !queue.empty() || done; });
+        cv.wait(lock, [this] { return !queue.empty() || isDone(); });
         if (queue.empty()) {
             return false;
         }
@@ -251,35 +235,123 @@ public:
     }
 };
 
-class Producer {
+// Template class for producing tuples of a fixed size from a collection
+template <typename Collection, unsigned Size, typename = std::enable_if_t<(Size > 0)>>
+class TupleProducer {
+public:
+    using Iterator = typename Collection::iterator;
+    using ValueType = typename Collection::value_type;
+
+    // Generate TupleType with Size elements of type std::optional<ValueType>
+    template <std::size_t... Indexes>
+    static auto create_empty_tuple(std::index_sequence<Indexes...>) {
+        return std::make_tuple((static_cast<void>(Indexes), std::optional<ValueType>{})...);
+    }
+
+    using TupleType = decltype(create_empty_tuple(std::make_index_sequence<Size>{}));
+
+    //using TupleType = decltype(std::declval<std::optional<ValueType>>(), std::make_index_sequence<Size>{});
+
+    class IteratorWrapper {
+    private:
+        Iterator current;
+        Iterator end;
+        TupleType current_tuple;
+
+    public:
+        explicit IteratorWrapper(Iterator start, Iterator finish) : current(start), end(finish) {
+            advance();
+        }
+
+        const TupleType& operator*() const {
+            return current_tuple;
+        }
+
+        IteratorWrapper& operator++() {
+            ++current;
+            advance();
+            return *this;
+        }
+
+        bool operator!=(const IteratorWrapper& other) const {
+            return current != other.current;
+        }
+
+    private:
+        void advance() {
+            if (current == end) {
+                return;
+            }
+
+            std::vector<std::optional<ValueType>> elements;
+            for (unsigned i = 0; i < Size && current != end; ++i, ++current) {
+                elements.push_back(*current);
+            }
+            --current;
+            while (elements.size() < Size) {
+                elements.push_back(std::nullopt);
+            }
+
+            current_tuple = to_tuple(elements);
+        }
+
+        static TupleType to_tuple(const std::vector<std::optional<ValueType>>& elements) {
+            return create_tuple(elements, std::make_index_sequence<Size>{});
+        }
+
+        template <std::size_t... Indexes>
+        static TupleType create_tuple(const std::vector<std::optional<ValueType>>& elements, std::index_sequence<Indexes...>) {
+            return std::make_tuple((Indexes < elements.size() ? elements[Indexes] : std::nullopt)...);
+        }
+    };
+
 private:
-    InputData& inputData;
-    CQueue<std::tuple<int,int,int>>& inputQueue;
+    Collection collection;
 
 public:
-    Producer(InputData& inputData, CQueue<std::tuple<int,int,int>>& inputQueue) : inputData(inputData), inputQueue(inputQueue) {}
+    explicit TupleProducer(const Collection& coll) : collection(coll) {}
+
+    IteratorWrapper begin() {
+        return IteratorWrapper(collection.begin(), collection.end());
+    }
+
+    IteratorWrapper end() {
+        return IteratorWrapper(collection.end(), collection.end());
+    }
+};
+
+class Producer {
+public:
+    using StringCoefficients = std::tuple<std::optional<std::string>, std::optional<std::string>, std::optional<std::string>>;
+    using Data = std::vector<std::string>;
+private:
+    Data& inputData;
+    CQueue<StringCoefficients>& inputQueue;
+
+public:
+    Producer(Data& inputData, CQueue<StringCoefficients>& inputQueue) : inputData(inputData), inputQueue(inputQueue) {}
     
     void run() {
-        for (auto it = inputData.begin(); it != inputData.end(); ++it) {
-            inputQueue.emplace(*it);
-        }
+        TupleProducer<Data, 3> tp(inputData);
+        for (auto it = tp.begin(); it != tp.end(); ++it) {
+                inputQueue.emplace(*it);
+            }
         inputQueue.setDone();
     }
 };
 
 class Solver {
 private:
-    CQueue<std::tuple<int,int,int>>& inputQueue;
+    CQueue<Producer::StringCoefficients>& inputQueue;
     CQueue<QuadraticEquation<int, double>::Solution>& outputQueue;
 
 public:
-    Solver(CQueue<std::tuple<int,int,int>>& inputQueue, CQueue<QuadraticEquation<int, double>::Solution>& outputQueue) : inputQueue(inputQueue), outputQueue(outputQueue) {}
+    Solver(CQueue<Producer::StringCoefficients>& inputQueue, CQueue<QuadraticEquation<int, double>::Solution>& outputQueue) : inputQueue(inputQueue), outputQueue(outputQueue) {}
     
     void run() {
-        std::tuple<int,int,int> task;
+        Producer::StringCoefficients task;
         while (inputQueue.dequeue(task)) {
-            const auto& [a, b, c] = task;
-            QuadraticEquation<int, double> eq(a, b, c);
+            QuadraticEquation<int, double> eq(task);
             outputQueue.emplace(eq.solve());
         }
         outputQueue.setDone();
@@ -289,32 +361,35 @@ public:
 class Application {
 private:
     std::ostream& output;
-    InputData& inputData;
-    CQueue<std::tuple<int,int,int>> inputQueue;
+    Producer::Data& inputData;
+    CQueue<Producer::StringCoefficients> inputQueue;
     CQueue<QuadraticEquation<int, double>::Solution> outputQueue;
 
 public:
-    Application(InputData& data, std::ostream& out) : inputData(data), output(out) {}
+    Application(Producer::Data& data, std::ostream& out) : inputData(data), output(out) {}
 
     void run() {
         Producer producer(inputData, inputQueue);
         Solver solver(inputQueue, outputQueue);
         Printer printer(output, outputQueue);
 
-        std::thread producerThread([&] { producer.run(); });
-        std::thread solverThread([&] { solver.run(); });
+        int32_t solversCount = std::max(1u, std::thread::hardware_concurrency() - 2);
+        std::vector<std::thread> solvers(solversCount);
+
+        auto createSolverThread = [&] () { return std::thread([&] { solver.run(); }); };
+        std::generate_n(solvers.begin(), solversCount, createSolverThread);
         std::thread printerThread([&] { printer.run(); });
+        std::thread producerThread([&] { producer.run(); });
 
         producerThread.join();
-        solverThread.join();
         printerThread.join();
+        std::for_each(solvers.begin(), solvers.end(), [] (std::thread& t) {t.join();}); 
     }
 };
 
-
 int main(int argc, char* argv[]) {
-    InputData data(argv, argc);
-    Application app(data, std::cout);
+    std::vector<std::string> arguments(argv+1, argv + argc);
+    Application app(arguments, std::cout);
     app.run();
     return 0;
 }
