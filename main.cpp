@@ -25,24 +25,15 @@
 #include <iterator>
 #include <type_traits>
 #include <stdexcept>
+#include <atomic>
+#include <assert.h>
 
-#if defined(__GNUC__) || defined(__clang__)
-    #define UNREACHABLE() __builtin_unreachable()
-#elif defined(_MSC_VER)
-    #define UNREACHABLE() __assume(false)
-#else
-    #define UNREACHABLE() std::abort()
-#endif
-
-template<typename IntType, typename FloatType>
-class QuadraticEquation {
+class QuadraticEquationSolver {
 public:
-    using Coefficients = std::tuple<std::optional<IntType>, std::optional<IntType>, std::optional<IntType>>;
+    using Coefficients = std::tuple<std::optional<int64_t>, std::optional<int64_t>, std::optional<int64_t>>;
     using Data = std::tuple<std::optional<std::string>, std::optional<std::string>, std::optional<std::string>>;
 private:
-    Coefficients coefficients;
-
-    static std::optional<int> parseInteger(const std::string& s) {
+    static std::optional<int64_t> parseInteger(const std::string& s) {
         try {
             return std::stoi(s);
         } catch (...) {
@@ -53,10 +44,18 @@ private:
 public:
 
     struct Solution {
+        Solution() = default;
+        
+        Solution(Coefficients coeff) : coefficients(coeff), incorrect_input(true) {}
+        Solution(Coefficients coeff, double _xmin) : coefficients(coeff), xmin(_xmin), no_roots(true), no_real_roots(true) {}
+        Solution(Coefficients coeff, double root, bool) : coefficients(coeff), root1(root), no_xmin(true) {}
+        Solution(Coefficients coeff, double _xmin, double root) : coefficients(coeff), xmin(_xmin), root1(root) {}
+        Solution(Coefficients coeff, double _xmin, double _root1, double _root2) : coefficients(coeff), xmin(_xmin), root1(_root1), root2(_root2) {}
+
         Coefficients coefficients;
-        std::optional<FloatType> root1;
-        std::optional<FloatType> root2;
-        std::optional<FloatType> xmin;
+        std::optional<double> root1;
+        std::optional<double> root2;
+        std::optional<double> xmin;
         bool no_roots = false;
         bool no_real_roots = false;
         bool no_xmin = false;
@@ -64,60 +63,47 @@ public:
     };
 
     // Constructor that converts vector of string tuples to Coefficients
-    QuadraticEquation(const Data& stringCoefficients) {
-        const auto& [a_str, b_str, c_str] = stringCoefficients;
-        coefficients = std::make_tuple(
-            a_str ? parseInteger(*a_str) : std::nullopt,
-            b_str ? parseInteger(*b_str) : std::nullopt,
-            c_str ? parseInteger(*c_str) : std::nullopt
-            );
-    }
+    QuadraticEquationSolver() = default;
 
-    Solution solve() const {
-        Solution solution;
-        solution.coefficients = coefficients;
+    Solution solve(const Data& stringCoeff) const {
 
+        Coefficients coefficients = parseCoefficietns(stringCoeff);
         // Check if all coefficients are valid
         if (!std::get<0>(coefficients).has_value() ||
             !std::get<1>(coefficients).has_value() ||
             !std::get<2>(coefficients).has_value()) {
-            solution.incorrect_input = true;
-            return solution;
+            return Solution(coefficients);
         }
 
-        IntType a = std::get<0>(coefficients).value();
-        IntType b = std::get<1>(coefficients).value();
-        IntType c = std::get<2>(coefficients).value();
+        int64_t a = std::get<0>(coefficients).value();
+        int64_t b = std::get<1>(coefficients).value();
+        int64_t c = std::get<2>(coefficients).value();
 
         if (a == 0) {
             if (b == 0) {
-                solution.incorrect_input = true;
-                return solution;
+                return Solution(coefficients);
             } else {
-                FloatType root = -static_cast<FloatType>(c) / b;
-                solution.root1 = root;
-                solution.no_xmin = true;
-                return solution;
+                double root = -static_cast<double>(c) / b;
+                // single root, no xmin
+                return Solution(coefficients, root, true);
             }
         }
 
-        FloatType sum = -static_cast<FloatType>(b) / a;
-        FloatType product = static_cast<FloatType>(c) / a;
+        double sum = -static_cast<double>(b) / a;
+        double product = static_cast<double>(c) / a;
 
-        FloatType discriminant = sum * sum - 4 * product;
+        double discriminant = sum * sum - 4 * product;
         if (discriminant < 0) {
-            solution.no_roots = true;
-            solution.no_real_roots = true;
-            solution.xmin = -sum / 2;
-            return solution;
+            // no roots, xmin exists
+            return Solution(coefficients, -sum / 2);
         }
 
-        FloatType sqrt_d = std::sqrt(discriminant);
-        solution.root1 = (sum + sqrt_d) / 2;
-        solution.root2 = (sum - sqrt_d) / 2;
-        solution.xmin = -sum / 2;
+        double sqrt_d = std::sqrt(discriminant);
+        double root1 = (sum + sqrt_d) / 2;
+        double root2 = (sum - sqrt_d) / 2;
+        double xmin = -sum / 2;
 
-        return solution;
+        return Solution(coefficients, root1, root2, xmin);
     }
 
     friend std::ostream& operator<<(std::ostream& os, const Solution& solution) {
@@ -146,93 +132,101 @@ public:
 
         return os;
     }
+private:
+    static Coefficients parseCoefficietns(const Data& stringCoefficients) {
+        const auto& [a_str, b_str, c_str] = stringCoefficients;
+        return std::make_tuple(
+            a_str ? parseInteger(*a_str) : std::nullopt,
+            b_str ? parseInteger(*b_str) : std::nullopt,
+            c_str ? parseInteger(*c_str) : std::nullopt
+            );
+    }
 };
 
 template <typename T>
-class CQueue {
-private:
-    std::queue<T> queue;
-    mutable std::mutex mtx;
-    std::condition_variable cv;
-    bool done = false;
+class SortOfLockFreeQueue {
+  unsigned int buffer_size;
+
+  struct CellTy {
+    std::atomic<unsigned> sequence;
+    T data;
+  };
+
+  alignas(64) std::vector<CellTy> buffer;
+  alignas(64) unsigned buffer_mask;
+  alignas(64) std::atomic<unsigned> enqueue_pos, dequeue_pos;
 
 public:
-    CQueue() = default;
-    ~CQueue() = default;
+  SortOfLockFreeQueue(unsigned int buffer_size)
+      : buffer(buffer_size), buffer_mask(buffer_size - 1) {
+    for (unsigned i = 0; i != buffer_size; ++i)
+      buffer[i].sequence.store(i, std::memory_order_relaxed);
 
-    // Add an item to the queue
-    void enqueue(const T& item) {
-        std::lock_guard<std::mutex> lock(mtx);
-        queue.push(item);
-        cv.notify_one();
+    enqueue_pos.store(0, std::memory_order_relaxed);
+    dequeue_pos.store(0, std::memory_order_relaxed);
+  }
+
+  bool tryEnqueue(T data) {
+    CellTy *cell;
+    unsigned pos;
+    bool res = false;
+
+    while (!res) {
+      pos = enqueue_pos.load(std::memory_order_relaxed);
+      cell = &buffer[pos & buffer_mask];
+      auto seq = cell->sequence.load(std::memory_order_acquire);
+      auto diff = static_cast<int>(seq) - static_cast<int>(pos);
+
+      if (diff < 0)
+        return false;
+
+      if (diff == 0)
+        res = enqueue_pos.compare_exchange_weak(pos, pos + 1,
+                                               std::memory_order_relaxed);
     }
 
-    void enqueue(T&& item) {
-        std::lock_guard<std::mutex> lock(mtx);
-        queue.push(std::move(item));
-        cv.notify_one();
+    cell->data = std::move(data);
+    cell->sequence.store(pos + 1, std::memory_order_release);
+    return true;
+  }
+
+  void enqueue(T data) {
+    while (!tryEnqueue(data)) {
+       std::this_thread::yield();
+    }
+  }
+
+  template <typename... Args>
+  void enqueue(Args&&... args) {
+    enqueue(T(std::forward<Args>(args)...));
+  }
+
+
+  bool tryDequeue(T &data) {
+    CellTy *cell;
+    unsigned pos;
+    bool res = false;
+
+    while (!res) {
+      pos = dequeue_pos.load(std::memory_order_relaxed);
+      cell = &buffer[pos & buffer_mask];
+      auto Seq = cell->sequence.load(std::memory_order_acquire);
+      auto diff = static_cast<int>(Seq) - static_cast<int>(pos + 1);
+
+      if (diff < 0)
+        return false;
+
+      if (diff == 0)
+        res = dequeue_pos.compare_exchange_weak(pos, pos + 1,
+                                               std::memory_order_relaxed);
     }
 
-    // Emplace an item directly in the queue
-    template <typename... Args>
-    void emplace(Args&&... args) {
-        std::lock_guard<std::mutex> lock(mtx);
-        queue.emplace(std::forward<Args>(args)...);
-        cv.notify_one();
-    }
+    data = std::move(cell->data);
+    cell->sequence.store(pos + buffer_mask + 1, std::memory_order_release);
+    return true;
+  }
 
-    // Remove and return the front item from the queue
-    bool dequeue(T& item) {
-        std::unique_lock<std::mutex> lock(mtx);
-        cv.wait(lock, [this] { return !queue.empty() || isDone(); });
-        if (queue.empty()) {
-            return false;
-        }
-        item = std::move(queue.front());
-        queue.pop();
-        return true;
-    }
-
-    // Mark the queue as done
-    void setDone() {
-        std::lock_guard<std::mutex> lock(mtx);
-        done = true;
-        cv.notify_all();
-    }
-
-    // Check if the queue is empty
-    bool empty() const {
-        std::lock_guard<std::mutex> lock(mtx);
-        return queue.empty();
-    }
-
-    // Get the size of the queue
-    size_t size() const {
-        std::lock_guard<std::mutex> lock(mtx);
-        return queue.size();
-    }
-
-    // Check if the queue is done
-    bool isDone() const {
-        std::lock_guard<std::mutex> lock(mtx);
-        return done;
-    }
-};
-
-class Printer {
-private:
-    std::ostream& output;
-    CQueue<QuadraticEquation<int, double>::Solution>& outputQueue;
-
-public:
-    Printer(std::ostream& output, CQueue<QuadraticEquation<int, double>::Solution>& outputQueue) : output(output), outputQueue(outputQueue) {}
-
-    void run() {
-        QuadraticEquation<int, double>::Solution task;
-        while (outputQueue.dequeue(task)) {
-            output << task << std::endl;
-        }
-    }
+  bool is_empty() const { return enqueue_pos.load() == dequeue_pos.load(); }
 };
 
 // Template class for producing tuples of a fixed size from a collection
@@ -249,8 +243,6 @@ public:
     }
 
     using TupleType = decltype(create_empty_tuple(std::make_index_sequence<Size>{}));
-
-    //using TupleType = decltype(std::declval<std::optional<ValueType>>(), std::make_index_sequence<Size>{});
 
     class IteratorWrapper {
     private:
@@ -287,7 +279,9 @@ public:
             for (unsigned i = 0; i < Size && current != end; ++i, ++current) {
                 elements.push_back(*current);
             }
+
             --current;
+
             while (elements.size() < Size) {
                 elements.push_back(std::nullopt);
             }
@@ -325,65 +319,119 @@ public:
     using StringCoefficients = std::tuple<std::optional<std::string>, std::optional<std::string>, std::optional<std::string>>;
     using Data = std::vector<std::string>;
 private:
+    std::atomic<bool>& done_flag;
+
     Data& inputData;
-    CQueue<StringCoefficients>& inputQueue;
+    SortOfLockFreeQueue<StringCoefficients>& inputQueue;
 
 public:
-    Producer(Data& inputData, CQueue<StringCoefficients>& inputQueue) : inputData(inputData), inputQueue(inputQueue) {}
+    uint32_t produced = 0;
+    Producer(Data& inputData, SortOfLockFreeQueue<StringCoefficients>& inputQueue, std::atomic<bool>& df) : inputData(inputData), inputQueue(inputQueue), done_flag(df) {}
     
     void run() {
         TupleProducer<Data, 3> tp(inputData);
         for (auto it = tp.begin(); it != tp.end(); ++it) {
-                inputQueue.emplace(*it);
-            }
-        inputQueue.setDone();
+          inputQueue.enqueue(*it);
+        }
+        done_flag.store(true, std::memory_order_release);
     }
 };
 
 class Solver {
 private:
-    CQueue<Producer::StringCoefficients>& inputQueue;
-    CQueue<QuadraticEquation<int, double>::Solution>& outputQueue;
+    std::atomic<bool>& input_done;
+    std::atomic<bool>& output_done;
+    std::atomic<uint32_t> workersDone;
+
+    SortOfLockFreeQueue<Producer::StringCoefficients>& inputQueue;
+    SortOfLockFreeQueue<QuadraticEquationSolver::Solution>& outputQueue;
+
+    void done() {
+      uint32_t left = workersDone.fetch_sub(1);
+      // fetch_sub return previous value, so 1 means we are the last worker
+      if (left == 1) {
+        output_done.store(true, std::memory_order_release);
+      }
+    }
 
 public:
-    Solver(CQueue<Producer::StringCoefficients>& inputQueue, CQueue<QuadraticEquation<int, double>::Solution>& outputQueue) : inputQueue(inputQueue), outputQueue(outputQueue) {}
+    Solver(SortOfLockFreeQueue<Producer::StringCoefficients>& inputQueue, SortOfLockFreeQueue<QuadraticEquationSolver::Solution>& outputQueue, std::atomic<bool>& idf, std::atomic<bool>& odf, uint32_t workers) : inputQueue(inputQueue), outputQueue(outputQueue), input_done(idf), output_done(odf), workersDone(workers) {}
     
     void run() {
         Producer::StringCoefficients task;
-        while (inputQueue.dequeue(task)) {
-            QuadraticEquation<int, double> eq(task);
-            outputQueue.emplace(eq.solve());
+        QuadraticEquationSolver eq;
+        while (true) {
+          while (inputQueue.tryDequeue(task)) {
+              outputQueue.enqueue(eq.solve(task));
+          }
+          std::this_thread::yield();
+          if (inputQueue.is_empty() && input_done.load(std::memory_order_acquire)) {
+            break;
+          }
         }
-        outputQueue.setDone();
+        done();
+    }
+};
+
+class Printer {
+private:
+    std::atomic<bool>& done_flag;
+
+    std::ostream& output;
+    SortOfLockFreeQueue<QuadraticEquationSolver::Solution>& outputQueue;
+
+public:
+    Printer(std::ostream& output, SortOfLockFreeQueue<QuadraticEquationSolver::Solution>& outputQueue, std::atomic<bool>& df) : output(output), outputQueue(outputQueue), done_flag(df) {}
+
+    void run() {
+        QuadraticEquationSolver::Solution task;
+        while (true) {
+            while (outputQueue.tryDequeue(task)) {
+                output << task << std::endl;
+            }
+            std::this_thread::yield();
+            if (outputQueue.is_empty() && done_flag.load(std::memory_order_acquire)) {
+              break;
+            }
+        }
     }
 };
 
 class Application {
 private:
+    static const unsigned int MEMORY_SIZE = 1024;
+
+
     std::ostream& output;
     Producer::Data& inputData;
-    CQueue<Producer::StringCoefficients> inputQueue;
-    CQueue<QuadraticEquation<int, double>::Solution> outputQueue;
+    SortOfLockFreeQueue<Producer::StringCoefficients> inputQueue;
+    SortOfLockFreeQueue<QuadraticEquationSolver::Solution> outputQueue;
 
 public:
-    Application(Producer::Data& data, std::ostream& out) : inputData(data), output(out) {}
+    Application(Producer::Data& data, std::ostream& out) : inputData(data), output(out),
+              inputQueue(MEMORY_SIZE), outputQueue(MEMORY_SIZE) {}
 
     void run() {
-        Producer producer(inputData, inputQueue);
-        Solver solver(inputQueue, outputQueue);
-        Printer printer(output, outputQueue);
+        int32_t solversCount = std::max(1, static_cast<int>(std::thread::hardware_concurrency()) - 2);
+        std::atomic<bool> input_flag = false, output_flag = false;
+        std::atomic<uint8_t> output_synchro_ctr = solversCount;
 
-        int32_t solversCount = std::max(1u, std::thread::hardware_concurrency() - 2);
+        Producer producer(inputData, inputQueue, input_flag);
+        Printer printer(output, outputQueue, output_flag);
+
+        Solver solver(inputQueue, outputQueue, input_flag, output_flag, solversCount);
         std::vector<std::thread> solvers(solversCount);
 
         auto createSolverThread = [&] () { return std::thread([&] { solver.run(); }); };
+        std::thread producerThread([&] { producer.run(); });
         std::generate_n(solvers.begin(), solversCount, createSolverThread);
         std::thread printerThread([&] { printer.run(); });
-        std::thread producerThread([&] { producer.run(); });
 
         producerThread.join();
-        printerThread.join();
         std::for_each(solvers.begin(), solvers.end(), [] (std::thread& t) {t.join();}); 
+        printerThread.join();
+        assert(inputQueue.is_empty());
+        assert(outputQueue.is_empty());
     }
 };
 
@@ -391,5 +439,6 @@ int main(int argc, char* argv[]) {
     std::vector<std::string> arguments(argv+1, argv + argc);
     Application app(arguments, std::cout);
     app.run();
+    std::cout.flush();
     return 0;
 }
