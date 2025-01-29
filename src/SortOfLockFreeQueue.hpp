@@ -1,13 +1,12 @@
 #ifndef SORT_OF_LOCK_FREE_QUEUE_HPP
 #define SORT_OF_LOCK_FREE_QUEUE_HPP
 
+#include <assert.h>
 #include <atomic>
 #include <thread>
 #include <vector>
-#include <assert.h>
 
-template <typename T>
-class SortOfLockFreeQueue {
+template <typename T> class SortOfLockFreeQueue {
 
   // using unsigned to allow legal wrap around
   struct CellTy {
@@ -15,7 +14,7 @@ class SortOfLockFreeQueue {
     T data;
   };
 
-  // make sure core values are in the different cache lines 
+  // make sure core values are in the different cache lines
   alignas(64) std::vector<CellTy> buffer;
   alignas(64) uint32_t buffer_mask;
   alignas(64) std::atomic<uint32_t> enqueue_pos, dequeue_pos;
@@ -23,7 +22,8 @@ class SortOfLockFreeQueue {
 public:
   SortOfLockFreeQueue(size_t buffer_size)
       : buffer(buffer_size), buffer_mask(buffer_size - 1) {
-    assert((buffer_size & (buffer_size - 1)) == 0 && "buffer size expected to be power of 2");
+    assert((buffer_size & (buffer_size - 1)) == 0 &&
+           "buffer size expected to be power of 2");
     for (size_t i = 0; i != buffer_size; ++i)
       buffer[i].sequence.store(i, std::memory_order_relaxed);
 
@@ -48,10 +48,11 @@ public:
       if (diff < 0)
         return false;
 
-      // If its sequence wasn't touched by other producers check if we can increment the enqueue position
+      // If its sequence wasn't touched by other producers check if we can
+      // increment the enqueue position
       if (diff == 0)
         res = enqueue_pos.compare_exchange_weak(pos, pos + 1,
-                                               std::memory_order_relaxed);
+                                                std::memory_order_relaxed);
     }
 
     // write the item we want to enqueue and bump sequence
@@ -62,15 +63,13 @@ public:
 
   void enqueue(T data) {
     while (!tryEnqueue(data)) {
-       std::this_thread::yield();
+      std::this_thread::yield();
     }
   }
 
-  template <typename... Args>
-  void enqueue(Args&&... args) {
+  template <typename... Args> void enqueue(Args &&...args) {
     enqueue(T(std::forward<Args>(args)...));
   }
-
 
   bool tryDequeue(T &data) {
     CellTy *cell;
@@ -92,7 +91,7 @@ public:
       // other consumers and if we can increment the dequeue position
       if (diff == 0)
         res = dequeue_pos.compare_exchange_weak(pos, pos + 1,
-                                               std::memory_order_relaxed);
+                                                std::memory_order_relaxed);
     }
 
     // read the item and update for the next round of the buffer
