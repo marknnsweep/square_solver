@@ -18,6 +18,7 @@ private:
 
 public:
   struct Solution {
+    // marker classes for correct solution determination
     struct Xmin {
       double v;
       explicit Xmin(double v) : v(v) {}
@@ -33,12 +34,15 @@ public:
 
     Solution(Coefficients coeff) : coefficients(coeff), incorrect_input(true){};
 
+    // any value of the variable leads to a solution of the equation
     Solution(Coefficients coeff, AllRoots)
         : coefficients(coeff), all_roots(true){};
+
     Solution(Coefficients coeff, NoRoots) : coefficients(coeff){};
 
     Solution(Coefficients coeff, Xmin xmin, NoRoots)
         : coefficients(coeff), xmin(xmin.v){};
+
     Solution(Coefficients coeff, Root root)
         : coefficients(coeff), root1(root.v){};
 
