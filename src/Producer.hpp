@@ -10,10 +10,9 @@
 
 class Producer {
 public:
-  using StringCoefficients =
-      std::tuple<std::optional<std::string>, std::optional<std::string>,
-                 std::optional<std::string>>;
   using Data = std::vector<std::string>;
+  using DataProducer = TupleProducer<Data, 3>;
+  using StringCoefficients = typename DataProducer::TupleType;
 
 private:
   const Data &inputData;
@@ -24,8 +23,8 @@ public:
       : inputData(inputData), inputPipeline(inputPipeline) {}
 
   void run() {
-    TupleProducer<Data, 3> tp(inputData);
-    for (auto it = tp.begin(); it != tp.end(); ++it) {
+    DataProducer dp(inputData);
+    for (auto it = dp.begin(); it != dp.end(); ++it) {
       inputPipeline.enqueue(*it);
     }
     inputPipeline.done();

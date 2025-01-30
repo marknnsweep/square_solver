@@ -67,10 +67,6 @@ public:
     }
   }
 
-  template <typename... Args> void enqueue(Args &&...args) {
-    enqueue(T(std::forward<Args>(args)...));
-  }
-
   bool tryDequeue(T &data) {
     CellTy *cell;
     uint32_t pos;
