@@ -12,6 +12,8 @@ if (GCC_VERSION VERSION_LESS 12)
     message(FATAL_ERROR "G++ version must be at least 12! Found: ${GCC_VERSION}")
 endif()
 
+find_package(Python3 3.7 REQUIRED)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
