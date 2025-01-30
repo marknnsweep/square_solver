@@ -5,6 +5,7 @@ quadratic_solver is a project for solving quadratic equations with multithreaded
 
 The structure is implemented as follows:
 
+```
                   +----------------------+  
                   |  Single Input Prod. |  
                   +----------------------+  
@@ -24,7 +25,7 @@ The structure is implemented as follows:
                +-----------------------------+  
                |      Single Output Print   |  
                +-----------------------------+  
-
+```
 
 ## Build Instructions
 - CMake 3.10+
