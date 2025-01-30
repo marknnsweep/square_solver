@@ -23,8 +23,10 @@ QuadraticEquationSolver::solve(const Data &stringCoeff) const {
   if (a == 0) {
     if (b == 0) {
       if (c == 0) {
+        // any value will be a solution, no xmin
         return Solution(coefficients, Solution::AllRoots());
       }
+      // there is no a value that is a solution, no xmin
       return Solution(coefficients, Solution::NoRoots());
     } else {
       double root = -static_cast<double>(c) / b;
