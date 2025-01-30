@@ -27,17 +27,18 @@ public:
       explicit Root(double v) : v(v) {}
     };
     struct AllRoots {};
+    struct NoRoots {};
 
     Solution() = default;
 
-    Solution(Coefficients coeff) : coefficients(coeff) {};
+    Solution(Coefficients coeff) : coefficients(coeff), incorrect_input(true){};
 
-    Solution(Coefficients coeff, bool incorrect_input)
-        : coefficients(coeff), incorrect_input(incorrect_input){};
     Solution(Coefficients coeff, AllRoots)
         : coefficients(coeff), all_roots(true){};
+    Solution(Coefficients coeff, NoRoots)
+        : coefficients(coeff) {};
 
-    Solution(Coefficients coeff, Xmin xmin)
+    Solution(Coefficients coeff, Xmin xmin, NoRoots)
         : coefficients(coeff), xmin(xmin.v){};
     Solution(Coefficients coeff, Root root)
         : coefficients(coeff), root1(root.v){};
