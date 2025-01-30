@@ -1,7 +1,30 @@
 # quadratic_solver
 
 ## Description
-quadratic_solver is a project for solving quadratic equations with multithreaded processing, implemented using the Producer-Consumer pattern.
+quadratic_solver is a project for solving quadratic equations with multithreaded processing, implemented using the Producer-Consumer pattern.  
+
+The structure is implemented as follows:
+
+                  +----------------------+
+                  |  Single Input Prod. |
+                  +----------------------+
+                    /        |           \
+                   /         |            \
+                  /          |             \-----
+                 /           |                   \
+                v            v                    v
+   +----------------+     +----------------+     +----------------+
+   |  Solver #1     |     |  Solver #2     |     |  Solver #N     |
+   +----------------+     +----------------+     +----------------+
+           \                 |                    /
+            \                |                   /
+             \               |                  /
+              \              |                 /
+               v             v                v
+               +-----------------------------+
+               |      Single Output Print   |
+               +-----------------------------+
+
 
 ## Build Instructions
 - CMake 3.10+
