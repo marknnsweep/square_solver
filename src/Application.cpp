@@ -12,7 +12,8 @@ void Application::run() {
       1, static_cast<int32_t>(std::thread::hardware_concurrency()) - 2);
 
   PipelineQueue<Producer::StringCoefficients> inputPipeline(MEMORY_SIZE, 1);
-  PipelineQueue<QuadraticEquationSolver::Solution> outputPipeline(MEMORY_SIZE, solversCount);
+  PipelineQueue<QuadraticEquationSolver::Solution> outputPipeline(MEMORY_SIZE,
+                                                                  solversCount);
 
   Producer producer(inputData, inputPipeline);
   Printer printer(output, outputPipeline);

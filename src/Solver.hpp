@@ -4,9 +4,9 @@
 #include <atomic>
 #include <thread>
 
+#include "PipelineQueue.hpp"
 #include "Producer.hpp"
 #include "QuadraticEquationSolver.hpp"
-#include "PipelineQueue.hpp"
 
 class Solver {
 private:
@@ -27,8 +27,8 @@ public:
       }
       if (inputPipeline.isDone()) {
         break;
-      } else  {
-       std::this_thread::yield();
+      } else {
+        std::this_thread::yield();
       }
     }
     outputPipeline.done();

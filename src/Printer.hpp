@@ -5,8 +5,8 @@
 #include <ostream>
 #include <thread>
 
-#include "QuadraticEquationSolver.hpp"
 #include "PipelineQueue.hpp"
+#include "QuadraticEquationSolver.hpp"
 
 class Printer {
 private:
@@ -26,8 +26,8 @@ public:
       }
 
       if (outputPipeline.isDone()) {
-         break;
-      } else  {
+        break;
+      } else {
         // skip time quant
         std::this_thread::yield();
       }
