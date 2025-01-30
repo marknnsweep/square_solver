@@ -9,15 +9,16 @@
 #include "SortOfLockFreeQueue.hpp"
 
 
+// A convenient wrapper over a queue to ensure synchronization
 template<typename T>
 class PipelineQueue {
 using Queue = SortOfLockFreeQueue<T>;
 
-std::atomic<uint32_t> producersCount;
+std::atomic<uint32_t> producers_count;
 Queue queue;
 
 public:
-    PipelineQueue(size_t buffer_size) : queue(buffer_size) {};
+    PipelineQueue(size_t buffer_size, uint32_t count) : queue(buffer_size), producers_count(count) {};
 
     template <typename... Args> void enqueue(Args &&...args) {
         queue.enqueue(T(std::forward<Args>(args)...));
@@ -29,13 +30,13 @@ public:
 
     bool isDone() const {
         // we don't have a clear order
-        return producersCount.load(std::memory_order_relaxed) == 0 && queue.isEmpty();
+        return producers_count.load(std::memory_order_relaxed) == 0 && queue.isEmpty();
     }
 
     void done() {
         // we don't have a clear order
-        assert(producersCount.load(std::memory_order_relaxed) != 0);
-        producersCount.fetch_sub(1);
+        assert(producers_count.load(std::memory_order_relaxed) > 0);
+        producers_count.fetch_sub(1);
     }
 
     bool isEmpty() const { return queue.isEmpty(); }
