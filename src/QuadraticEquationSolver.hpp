@@ -26,14 +26,17 @@ public:
   struct Solution {
     Solution() = default;
 
-    Solution(Coefficients coeff) : coefficients(coeff), incorrect_input(true) {}
-    Solution(Coefficients coeff, double _xmin)
-        : coefficients(coeff), xmin(_xmin), no_roots(true) {}
-    Solution(Coefficients coeff, double root, bool)
-        : coefficients(coeff), root1(root), incorrect_input(true) {}
+    Solution(Coefficients coeff, bool incorrect_input = false,
+             bool all_roots = false)
+        : coefficients(coeff), no_roots(!all_roots), all_roots(all_roots),
+          incorrect_input(incorrect_input) {}
+    Solution(Coefficients coeff, double _xmin, bool no_roots)
+        : coefficients(coeff), xmin(_xmin), no_roots(no_roots) {}
+    Solution(Coefficients coeff, double root)
+        : coefficients(coeff), root1(root) {}
     Solution(Coefficients coeff, double _xmin, double root)
         : coefficients(coeff), xmin(_xmin), root1(root) {}
-    Solution(Coefficients coeff, double _xmin, double _root1, double _root2)
+    Solution(Coefficients coeff, double _root1, double _root2, double _xmin)
         : coefficients(coeff), xmin(_xmin), root1(_root1), root2(_root2) {}
 
     Coefficients coefficients;
@@ -41,7 +44,7 @@ public:
     std::optional<double> root2;
     std::optional<double> xmin;
     bool no_roots = false;
-    bool no_xmin = false;
+    bool all_roots = false;
     bool incorrect_input = false;
   };
 
@@ -65,15 +68,23 @@ public:
     if (solution.incorrect_input) {
       os << "invalid input";
     } else {
-      os << "(";
-      os << (solution.root1.has_value() ? std::to_string(solution.root1.value())
-                                        : "No root 1");
-      os << ", ";
-      os << (solution.root2.has_value() ? std::to_string(solution.root2.value())
-                                        : "No root 2");
+      if (solution.no_roots) {
+        os << "No roots";
+      } else if (solution.all_roots) {
+        os << "All roots";
+      } else {
+        os << "(";
+        os << (solution.root1.has_value()
+                   ? std::to_string(solution.root1.value())
+                   : "");
+        os << (solution.root2.has_value()
+                   ? ", " + std::to_string(solution.root2.value())
+                   : "");
+        os << ")";
+      }
       os << (solution.xmin.has_value()
-                 ? ") Xmin=" + std::to_string(solution.xmin.value())
-                 : ") No Xmin");
+                 ? " Xmin=" + std::to_string(solution.xmin.value())
+                 : " No Xmin");
     }
 
     return os;

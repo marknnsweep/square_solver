@@ -4,7 +4,7 @@ import unittest
 class QuadraticEquationE2ETest(unittest.TestCase):
     def run_program(self, input_args):
         result = subprocess.run(
-            ["./eq_solver"] + input_args,
+            ["./quadratic_solver"] + input_args,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
@@ -194,7 +194,7 @@ class QuadraticEquationE2ETest(unittest.TestCase):
         output, error = self.run_program(input_args)
         
         expected_outputs = [
-            "(0,0,0) => invalid input",
+            "(0,0,0) => All roots No Xmin",
         ]
         
         self.assertEqual(output, expected_outputs)
@@ -205,7 +205,7 @@ class QuadraticEquationE2ETest(unittest.TestCase):
         output, error = self.run_program(input_args)
         
         expected_outputs = [
-            "(1,-2,-3) => (-1.000000, -1.000000) Xmin=3.000000",
+            "(1,-2,-3) => (3.000000, -1.000000) Xmin=-1.000000",
         ]
         
         self.assertEqual(output, expected_outputs)
@@ -216,7 +216,7 @@ class QuadraticEquationE2ETest(unittest.TestCase):
         output, error = self.run_program(input_args)
         
         expected_outputs = [
-            "(1,2,3) => (No root 1, No root 2) Xmin=1.000000",
+            "(1,2,3) => No roots Xmin=1.000000",
         ]
         
         self.assertEqual(output, expected_outputs)
@@ -227,7 +227,7 @@ class QuadraticEquationE2ETest(unittest.TestCase):
         output, error = self.run_program(input_args)
         
         expected_outputs = [
-            "(1,-6,9) => (3.000000, -3.000000) Xmin=3.000000",
+            "(1,-6,9) => (3.000000, 3.000000) Xmin=-3.000000",
         ]
         
         self.assertEqual(output, expected_outputs)
@@ -238,7 +238,7 @@ class QuadraticEquationE2ETest(unittest.TestCase):
         output, error = self.run_program(input_args)
         
         expected_outputs = [
-            "(1,0,-2) => (-1.414214, 0.000000) Xmin=1.414214",
+            "(1,0,-2) => (1.414214, -1.414214) Xmin=0.000000",
         ]
         
         self.assertEqual(output, expected_outputs)
@@ -249,7 +249,7 @@ class QuadraticEquationE2ETest(unittest.TestCase):
         output, error = self.run_program(input_args)
         
         expected_outputs = [
-            "(0,0,1) => invalid input",
+            "(0,0,1) => No roots No Xmin",
         ]
         
         self.assertEqual(output, expected_outputs)
@@ -260,7 +260,7 @@ class QuadraticEquationE2ETest(unittest.TestCase):
         output, error = self.run_program(input_args)
         
         expected_outputs = [
-            "(0,1,1) => invalid input",
+            "(0,1,1) => (-1.000000) No Xmin",
         ]
         
         self.assertEqual(output, expected_outputs)
@@ -287,7 +287,7 @@ class QuadraticEquationE2ETest(unittest.TestCase):
         expected_outputs = {
             "(1,,-3) => invalid input",
             "(1,,-3) => invalid input",
-            "(1,-2,-3) => (-1.000000, -1.000000) Xmin=3.000000",
+            "(1,-2,-3) => (3.000000, -1.000000) Xmin=-1.000000",
         }
         
         self.assertEqual(set(output), expected_outputs)
@@ -298,9 +298,9 @@ class QuadraticEquationE2ETest(unittest.TestCase):
         output, error = self.run_program(input_args)
         
         expected_outputs = {
-            "(1,-2,-3) => (-1.000000, -1.000000) Xmin=3.000000",
+            "(1,-2,-3) => (3.000000, -1.000000) Xmin=-1.000000",
             "(1,,-3) => invalid input",
-            "(1,-2,-3) => (-1.000000, -1.000000) Xmin=3.000000",
+            "(1,-2,-3) => (3.000000, -1.000000) Xmin=-1.000000",
         }
         
         self.assertEqual(set(output), expected_outputs)
@@ -311,9 +311,9 @@ class QuadraticEquationE2ETest(unittest.TestCase):
         output, error = self.run_program(input_args)
         
         expected_outputs = {
-            "(1,-2,-3) => (-1.000000, -1.000000) Xmin=3.000000",
-            "(1,-2,-3) => (-1.000000, -1.000000) Xmin=3.000000",
-            "(1,-2,-3) => (-1.000000, -1.000000) Xmin=3.000000",
+            "(1,-2,-3) => (3.000000, -1.000000) Xmin=-1.000000",
+            "(1,-2,-3) => (3.000000, -1.000000) Xmin=-1.000000",
+            "(1,-2,-3) => (3.000000, -1.000000) Xmin=-1.000000",
         }
         
         self.assertEqual(set(output), expected_outputs)
