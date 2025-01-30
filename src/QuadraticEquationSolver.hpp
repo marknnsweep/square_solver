@@ -35,8 +35,7 @@ public:
 
     Solution(Coefficients coeff, AllRoots)
         : coefficients(coeff), all_roots(true){};
-    Solution(Coefficients coeff, NoRoots)
-        : coefficients(coeff) {};
+    Solution(Coefficients coeff, NoRoots) : coefficients(coeff){};
 
     Solution(Coefficients coeff, Xmin xmin, NoRoots)
         : coefficients(coeff), xmin(xmin.v){};
