@@ -18,7 +18,7 @@ public:
 private:
   std::atomic<bool> &done_flag;
 
-  Data &inputData;
+  const Data &inputData;
   SortOfLockFreeQueue<StringCoefficients> &inputQueue;
 
 public:

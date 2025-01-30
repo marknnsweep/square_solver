@@ -9,9 +9,10 @@ template <typename Collection, size_t Size,
           typename = std::enable_if_t<(Size > 0)>>
 class TupleProducer {
 public:
-  using Iterator = typename Collection::iterator;
+  using Iterator = typename Collection::const_iterator;
   using ValueType = typename Collection::value_type;
 
+private:
   // Generate TupleType with Size elements of type std::optional<ValueType>
   template <std::size_t... Indexes>
   static auto create_empty_tuple(std::index_sequence<Indexes...>) {
@@ -19,6 +20,7 @@ public:
         (static_cast<void>(Indexes), std::optional<ValueType>{})...);
   }
 
+public:
   using TupleType =
       decltype(create_empty_tuple(std::make_index_sequence<Size>{}));
 
@@ -82,16 +84,16 @@ public:
   };
 
 private:
-  Collection collection;
+  const Collection& collection;
 
 public:
   explicit TupleProducer(const Collection &coll) : collection(coll) {}
 
-  IteratorWrapper begin() {
+  IteratorWrapper begin() const {
     return IteratorWrapper(collection.begin(), collection.end());
   }
 
-  IteratorWrapper end() {
+  IteratorWrapper end() const {
     return IteratorWrapper(collection.end(), collection.end());
   }
 };

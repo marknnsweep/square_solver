@@ -23,13 +23,15 @@ QuadraticEquationSolver::solve(const Data &stringCoeff) const {
   if (a == 0) {
     if (b == 0) {
       if (c == 0) {
-        return Solution(coefficients, false, true);
+        return Solution(coefficients,
+                        Solution::AllRoots(true));
       }
       return Solution(coefficients);
     } else {
       double root = -static_cast<double>(c) / b;
       // single root, no xmin
-      return Solution(coefficients, root);
+      return Solution(coefficients,
+                      Solution::Root(root));
     }
   }
 
@@ -39,7 +41,8 @@ QuadraticEquationSolver::solve(const Data &stringCoeff) const {
   double discriminant = sum * sum - 4 * product;
   if (discriminant < 0) {
     // no roots, xmin exists
-    return Solution(coefficients, -sum / 2, true);
+    return Solution(coefficients,
+                    Solution::Xmin(-sum / 2));
   }
 
   double sqrt_d = std::sqrt(discriminant);
@@ -49,4 +52,65 @@ QuadraticEquationSolver::solve(const Data &stringCoeff) const {
   double xmin = -sum / 2;
 
   return Solution(coefficients, root1, root2, xmin);
+}
+
+std::ostream &operator<<(std::ostream &os,
+                         const QuadraticEquationSolver::Solution &solution) {
+  const auto &[a, b, c] = solution.coefficients;
+
+  // Output coefficients with missing values as empty spaces
+  os << "(";
+  os << (a.has_value() ? std::to_string(a.value()) : "");
+  os << ",";
+  os << (b.has_value() ? std::to_string(b.value()) : "");
+  os << ",";
+  os << (c.has_value() ? std::to_string(c.value()) : "");
+  os << ") => ";
+
+  // Output based on solution correctness
+  if (solution.incorrect_input) {
+    os << "invalid input";
+  } else {
+    if (solution.all_roots) {
+      os << "All roots";
+    } else if (!solution.root1 && !solution.root2) {
+      os << "No roots";
+    } else {
+      os << "(";
+      os << (solution.root1.has_value() ? std::to_string(solution.root1.value())
+                                        : "");
+      os << (solution.root2.has_value()
+                 ? ", " + std::to_string(solution.root2.value())
+                 : "");
+      os << ")";
+    }
+    os << (solution.xmin.has_value()
+               ? " Xmin=" + std::to_string(solution.xmin.value())
+               : " No Xmin");
+  }
+
+  return os;
+}
+
+std::optional<int64_t>
+QuadraticEquationSolver::parseInteger(const std::string &s) {
+  try {
+    std::size_t pos = 0;
+    int64_t value = std::stoll(s, &pos); // parse numeric part
+    if (pos != s.size()) {
+      // Some non-numeric characters remain => fail
+      throw std::invalid_argument("Invalid numeric string");
+    }
+    return value;
+  } catch (...) {
+    return std::nullopt;
+  }
+}
+
+QuadraticEquationSolver::Coefficients
+QuadraticEquationSolver::parseCoefficietns(const Data &stringCoefficients) {
+  const auto &[a_str, b_str, c_str] = stringCoefficients;
+  return std::make_tuple(a_str ? parseInteger(*a_str) : std::nullopt,
+                         b_str ? parseInteger(*b_str) : std::nullopt,
+                         c_str ? parseInteger(*c_str) : std::nullopt);
 }
