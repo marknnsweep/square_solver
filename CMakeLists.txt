@@ -21,7 +21,7 @@ set(SRC_DIR "${CMAKE_SOURCE_DIR}/src")
 
 file(GLOB_RECURSE SOURCES "${SRC_DIR}/*.cpp")
 
-add_executable(eq_solver ${SOURCES})
+add_executable(quadratic_solver ${SOURCES})
 
 set(TESTS_FILE "${CMAKE_SOURCE_DIR}/tests/tests.py")
 set(DESTINATION_DIR "${CMAKE_BINARY_DIR}")
@@ -31,6 +31,6 @@ add_custom_target(copy_tests
     COMMENT "Copying tests.py to build directory..."
 )
 
-add_dependencies(eq_solver copy_tests)
+add_dependencies(quadratic_solver copy_tests)
 
-target_compile_options(eq_solver PRIVATE --std=c++17)
+target_compile_options(quadratic_solver PRIVATE --std=c++17)
