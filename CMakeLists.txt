@@ -33,4 +33,4 @@ add_custom_target(copy_tests
 
 add_dependencies(eq_solver copy_tests)
 
-target_compile_options(eq_solver PRIVATE -g)
+target_compile_options(eq_solver PRIVATE --std=c++17)

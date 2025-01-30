@@ -29,8 +29,8 @@ The structure is implemented as follows:
 
 ## Build Instructions
 - CMake 3.10+
-- g++12
-- python3
+- g++12+
+- python3.7+
 
 ## Build Instructions
 ```sh
@@ -42,7 +42,7 @@ make
 
 ## Running the Program
 ```sh
-./build/quadratic_solver
+./build/quadratic_solver N1 N2 N3 ... Nm
 ```
 
 ## Running Tests
@@ -55,7 +55,18 @@ python3 tests.py
 ```
 quadratic_solver/
 │── src/                 # Source files
+│   │── Application.cpp
+│   │── Application.hpp
+│   │── Printer.hpp
+│   │── Producer.hpp
+│   │── QuadraticEquationSolver.cpp
+│   │── QuadraticEquationSolver.hpp
+│   │── Solver.hpp
+│   │── SortOfLockFreeQueue.hpp
+│   │── TupleProducer.hpp
+│   │── main.cpp
 │── build/               # Build directory
 │── tests/               # Tests
+│   │── tests.py
 │── CMakeLists.txt       # CMake configuration
 │── README.md            # Documentation
