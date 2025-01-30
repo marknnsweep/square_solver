@@ -276,6 +276,17 @@ class QuadraticEquationE2ETest(unittest.TestCase):
         
         self.assertEqual(output, expected_outputs)
 
+    def test_valid_input_8(self):
+        """Half-numbers."""
+        input_args = ["123qwerty", "0-3", "2"]
+        output, error = self.run_program(input_args)
+        
+        expected_outputs = [
+            "(,,2) => invalid input",
+        ]
+        
+        self.assertEqual(output, expected_outputs)
+
 # multiple-equation section
     def test_m_input_1(self):
         """Three invalid equations."""

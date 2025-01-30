@@ -16,7 +16,13 @@ public:
 private:
   static std::optional<int64_t> parseInteger(const std::string &s) {
     try {
-      return std::stoll(s);
+      std::size_t pos = 0;
+      int64_t value = std::stoll(s, &pos);  // parse numeric part
+      if (pos != s.size()) {
+        // Some non-numeric characters remain => fail
+        throw std::invalid_argument("Invalid numeric string");
+      }
+      return value;
     } catch (...) {
       return std::nullopt;
     }
