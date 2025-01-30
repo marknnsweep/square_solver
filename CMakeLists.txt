@@ -34,3 +34,11 @@ add_custom_target(copy_tests
 add_dependencies(quadratic_solver copy_tests)
 
 target_compile_options(quadratic_solver PRIVATE --std=c++17)
+
+add_custom_target(run_tests
+    COMMAND python3 ${DESTINATION_DIR}/tests.py
+    DEPENDS copy_tests
+    WORKING_DIRECTORY ${DESTINATION_DIR}
+    COMMENT "Running Python tests..."
+    VERBATIM
+)

@@ -48,6 +48,11 @@ make
 ## Running Tests
 ```sh
 cd build
+make run_tests
+```
+or
+```sh
+cd build
 python3 tests.py
 ```
 

@@ -265,6 +265,17 @@ class QuadraticEquationE2ETest(unittest.TestCase):
         
         self.assertEqual(output, expected_outputs)
 
+    def test_valid_input_7(self):
+        """No roots."""
+        input_args = ["1", "0", "2"]
+        output, error = self.run_program(input_args)
+        
+        expected_outputs = [
+            "(1,0,2) => No roots Xmin=0.000000",
+        ]
+        
+        self.assertEqual(output, expected_outputs)
+
 # multiple-equation section
     def test_m_input_1(self):
         """Three invalid equations."""
