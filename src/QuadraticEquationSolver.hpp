@@ -26,10 +26,7 @@ public:
       double v;
       explicit Root(double v) : v(v) {}
     };
-    struct AllRoots {
-      bool v;
-      explicit AllRoots(bool v) : v(v) {}
-    };
+    struct AllRoots {};
 
     Solution() = default;
 

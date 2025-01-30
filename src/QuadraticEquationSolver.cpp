@@ -24,7 +24,7 @@ QuadraticEquationSolver::solve(const Data &stringCoeff) const {
     if (b == 0) {
       if (c == 0) {
         return Solution(coefficients,
-                        Solution::AllRoots(true));
+                        Solution::AllRoots());
       }
       return Solution(coefficients);
     } else {
