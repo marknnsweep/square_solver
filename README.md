@@ -27,7 +27,7 @@ The structure is implemented as follows:
                +-----------------------------+  
 ```
 
-## Build Instructions
+## Build Requirement
 - CMake 3.10+
 - g++12+
 - python3.7+
