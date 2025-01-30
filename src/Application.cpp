@@ -10,13 +10,11 @@
 void Application::run() {
   int32_t solversCount = std::max(
       1, static_cast<int32_t>(std::thread::hardware_concurrency()) - 2);
-  std::atomic<bool> input_flag = false, output_flag = false;
-  std::atomic<uint32_t> output_synchro_ctr = solversCount;
 
-  Producer producer(inputData, inputQueue, input_flag);
-  Printer printer(output, outputQueue, output_flag);
+  Producer producer(inputData, inputPipeline);
+  Printer printer(output, outputPipeline);
 
-  Solver solver(inputQueue, outputQueue, input_flag, output_flag, solversCount);
+  Solver solver(inputPipeline, outputPipeline);
   std::vector<std::thread> solvers(solversCount);
 
   auto createSolverThread = [&]() {
@@ -30,6 +28,6 @@ void Application::run() {
   std::for_each(solvers.begin(), solvers.end(),
                 [](std::thread &t) { t.join(); });
   printerThread.join();
-  assert(inputQueue.is_empty());
-  assert(outputQueue.is_empty());
+  assert(inputPipeline.isEmpty());
+  assert(outputPipeline.isEmpty());
 }

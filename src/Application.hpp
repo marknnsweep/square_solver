@@ -11,13 +11,13 @@ private:
 
   std::ostream &output;
   Producer::Data &inputData;
-  SortOfLockFreeQueue<Producer::StringCoefficients> inputQueue;
-  SortOfLockFreeQueue<QuadraticEquationSolver::Solution> outputQueue;
+  PipelineQueue<Producer::StringCoefficients> inputPipeline;
+  PipelineQueue<QuadraticEquationSolver::Solution> outputPipeline;
 
 public:
   Application(Producer::Data &data, std::ostream &out)
-      : inputData(data), output(out), inputQueue(MEMORY_SIZE),
-        outputQueue(MEMORY_SIZE) {}
+      : inputData(data), output(out), inputPipeline(MEMORY_SIZE),
+        outputPipeline(MEMORY_SIZE) {}
 
   void run();
 };

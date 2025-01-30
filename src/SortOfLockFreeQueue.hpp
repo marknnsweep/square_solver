@@ -100,7 +100,7 @@ public:
     return true;
   }
 
-  bool is_empty() const { return enqueue_pos.load() == dequeue_pos.load(); }
+  bool isEmpty() const { return enqueue_pos.load() == dequeue_pos.load(); }
 };
 
 #endif // SORT_OF_LOCK_FREE_QUEUE_HPP

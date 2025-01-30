@@ -5,7 +5,7 @@
 #include <string>
 #include <tuple>
 
-#include "SortOfLockFreeQueue.hpp"
+#include "PipelineQueue.hpp"
 #include "TupleProducer.hpp"
 
 class Producer {
@@ -16,22 +16,19 @@ public:
   using Data = std::vector<std::string>;
 
 private:
-  std::atomic<bool> &done_flag;
-
   const Data &inputData;
-  SortOfLockFreeQueue<StringCoefficients> &inputQueue;
+  PipelineQueue<StringCoefficients> &inputPipeline;
 
 public:
-  Producer(Data &inputData, SortOfLockFreeQueue<StringCoefficients> &inputQueue,
-           std::atomic<bool> &df)
-      : inputData(inputData), inputQueue(inputQueue), done_flag(df) {}
+  Producer(Data &inputData, PipelineQueue<StringCoefficients> &inputPipeline)
+      : inputData(inputData), inputPipeline(inputPipeline) {}
 
   void run() {
     TupleProducer<Data, 3> tp(inputData);
     for (auto it = tp.begin(); it != tp.end(); ++it) {
-      inputQueue.enqueue(*it);
+      inputPipeline.enqueue(*it);
     }
-    done_flag.store(true, std::memory_order_release);
+    inputPipeline.done();
   }
 };
 
