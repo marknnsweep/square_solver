@@ -73,7 +73,7 @@ class QuadraticEquationE2ETest(unittest.TestCase):
         output, error = self.run_program(input_args)
         
         expected_outputs = [
-            "(9223372036854775808,,) => invalid input",
+            "(,,) => invalid input",
         ]
         
         self.assertEqual(output, expected_outputs)
@@ -84,7 +84,7 @@ class QuadraticEquationE2ETest(unittest.TestCase):
         output, error = self.run_program(input_args)
         
         expected_outputs = [
-            "(-9223372036854775809,,) => invalid input",
+            "(,,) => invalid input",
         ]
         
         self.assertEqual(output, expected_outputs)
@@ -95,7 +95,7 @@ class QuadraticEquationE2ETest(unittest.TestCase):
         output, error = self.run_program(input_args)
         
         expected_outputs = [
-            "(qwerty,,) => invalid input",
+            "(,,) => invalid input",
         ]
         
         self.assertEqual(output, expected_outputs)
@@ -117,7 +117,7 @@ class QuadraticEquationE2ETest(unittest.TestCase):
         output, error = self.run_program(input_args)
         
         expected_outputs = [
-            "(qwerty,1,) => invalid input",
+            "(,1,) => invalid input",
         ]
         
         self.assertEqual(output, expected_outputs)
@@ -128,7 +128,7 @@ class QuadraticEquationE2ETest(unittest.TestCase):
         output, error = self.run_program(input_args)
         
         expected_outputs = [
-            "(1,qwerty,) => invalid input",
+            "(1,,) => invalid input",
         ]
         
         self.assertEqual(output, expected_outputs)
@@ -139,7 +139,7 @@ class QuadraticEquationE2ETest(unittest.TestCase):
         output, error = self.run_program(input_args)
         
         expected_outputs = [
-            "(1,1,qwerty) => invalid input",
+            "(1,1,) => invalid input",
         ]
         
         self.assertEqual(output, expected_outputs)
@@ -150,7 +150,7 @@ class QuadraticEquationE2ETest(unittest.TestCase):
         output, error = self.run_program(input_args)
         
         expected_outputs = [
-            "(qwerty,1,qwerty) => invalid input",
+            "(,1,) => invalid input",
         ]
         
         self.assertEqual(output, expected_outputs)
@@ -161,7 +161,7 @@ class QuadraticEquationE2ETest(unittest.TestCase):
         output, error = self.run_program(input_args)
         
         expected_outputs = [
-            "(1,qwerty,qwerty) => invalid input",
+            "(1,,) => invalid input",
         ]
         
         self.assertEqual(output, expected_outputs)
@@ -172,7 +172,7 @@ class QuadraticEquationE2ETest(unittest.TestCase):
         output, error = self.run_program(input_args)
         
         expected_outputs = [
-            "(qwerty,qwerty,1) => invalid input",
+            "(,,1) => invalid input",
         ]
         
         self.assertEqual(output, expected_outputs)
@@ -183,7 +183,7 @@ class QuadraticEquationE2ETest(unittest.TestCase):
         output, error = self.run_program(input_args)
         
         expected_outputs = [
-            "(qwerty,qwerty,qwerty) => invalid input",
+            "(,,) => invalid input",
         ]
         
         self.assertEqual(output, expected_outputs)
@@ -260,7 +260,7 @@ class QuadraticEquationE2ETest(unittest.TestCase):
         output, error = self.run_program(input_args)
         
         expected_outputs = [
-            "(0,1,1) => (-1.000000, No root 2) No Xmin",
+            "(0,1,1) => invalid input",
         ]
         
         self.assertEqual(output, expected_outputs)
@@ -272,9 +272,9 @@ class QuadraticEquationE2ETest(unittest.TestCase):
         output, error = self.run_program(input_args)
         
         expected_outputs = {
-            "(1,qwerty,-3) => invalid input",
-            "(qwerty,-2,-3) => invalid input",
-            "(qwerty,qwerty,qwerty) => invalid input",
+            "(1,,-3) => invalid input",
+            "(,-2,-3) => invalid input",
+            "(,,) => invalid input",
         }
         
         self.assertEqual(set(output), expected_outputs)
@@ -285,8 +285,8 @@ class QuadraticEquationE2ETest(unittest.TestCase):
         output, error = self.run_program(input_args)
         
         expected_outputs = {
-            "(1,qwerty,-3) => invalid input",
-            "(1,qwerty,-3) => invalid input",
+            "(1,,-3) => invalid input",
+            "(1,,-3) => invalid input",
             "(1,-2,-3) => (-1.000000, -1.000000) Xmin=3.000000",
         }
         
@@ -299,7 +299,7 @@ class QuadraticEquationE2ETest(unittest.TestCase):
         
         expected_outputs = {
             "(1,-2,-3) => (-1.000000, -1.000000) Xmin=3.000000",
-            "(1,qwerty,-3) => invalid input",
+            "(1,,-3) => invalid input",
             "(1,-2,-3) => (-1.000000, -1.000000) Xmin=3.000000",
         }
         

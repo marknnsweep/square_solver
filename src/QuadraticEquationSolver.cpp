@@ -13,7 +13,7 @@ QuadraticEquationSolver::solve(const Data &stringCoeff) const {
   if (!std::get<0>(coefficients).has_value() ||
       !std::get<1>(coefficients).has_value() ||
       !std::get<2>(coefficients).has_value()) {
-    return Solution(stringCoeff);
+    return Solution(coefficients);
   }
 
   int64_t a = std::get<0>(coefficients).value();
@@ -22,11 +22,11 @@ QuadraticEquationSolver::solve(const Data &stringCoeff) const {
 
   if (a == 0) {
     if (b == 0) {
-      return Solution(stringCoeff);
+      return Solution(coefficients);
     } else {
       double root = -static_cast<double>(c) / b;
       // single root, no xmin
-      return Solution(stringCoeff, root, true);
+      return Solution(coefficients, root, true);
     }
   }
 
@@ -36,7 +36,7 @@ QuadraticEquationSolver::solve(const Data &stringCoeff) const {
   double discriminant = sum * sum - 4 * product;
   if (discriminant < 0) {
     // no roots, xmin exists
-    return Solution(stringCoeff, -sum / 2);
+    return Solution(coefficients, -sum / 2);
   }
 
   double sqrt_d = std::sqrt(discriminant);
@@ -44,5 +44,5 @@ QuadraticEquationSolver::solve(const Data &stringCoeff) const {
   double root2 = (sum - sqrt_d) / 2;
   double xmin = -sum / 2;
 
-  return Solution(stringCoeff, root1, root2, xmin);
+  return Solution(coefficients, root1, root2, xmin);
 }

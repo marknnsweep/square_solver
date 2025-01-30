@@ -26,17 +26,17 @@ public:
   struct Solution {
     Solution() = default;
 
-    Solution(Data coeff) : coefficients(coeff), incorrect_input(true) {}
-    Solution(Data coeff, double _xmin)
+    Solution(Coefficients coeff) : coefficients(coeff), incorrect_input(true) {}
+    Solution(Coefficients coeff, double _xmin)
         : coefficients(coeff), xmin(_xmin), no_roots(true) {}
-    Solution(Data coeff, double root, bool)
-        : coefficients(coeff), root1(root), no_xmin(true) {}
-    Solution(Data coeff, double _xmin, double root)
+    Solution(Coefficients coeff, double root, bool)
+        : coefficients(coeff), root1(root), incorrect_input(true) {}
+    Solution(Coefficients coeff, double _xmin, double root)
         : coefficients(coeff), xmin(_xmin), root1(root) {}
-    Solution(Data coeff, double _xmin, double _root1, double _root2)
+    Solution(Coefficients coeff, double _xmin, double _root1, double _root2)
         : coefficients(coeff), xmin(_xmin), root1(_root1), root2(_root2) {}
 
-    Data coefficients;
+    Coefficients coefficients;
     std::optional<double> root1;
     std::optional<double> root2;
     std::optional<double> xmin;
@@ -45,7 +45,6 @@ public:
     bool incorrect_input = false;
   };
 
-  // Constructor that converts vector of string tuples to Coefficients
   QuadraticEquationSolver() = default;
 
   Solution solve(const Data &stringCoeff) const;
@@ -55,11 +54,11 @@ public:
 
     // Output coefficients with missing values as empty spaces
     os << "(";
-    os << (a.has_value() ? a.value() : "");
+    os << (a.has_value() ? std::to_string(a.value()) : "");
     os << ",";
-    os << (b.has_value() ? b.value() : "");
+    os << (b.has_value() ? std::to_string(b.value()) : "");
     os << ",";
-    os << (c.has_value() ? c.value() : "");
+    os << (c.has_value() ? std::to_string(c.value()) : "");
     os << ") => ";
 
     // Output based on solution correctness
