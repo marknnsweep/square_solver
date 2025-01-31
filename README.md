@@ -56,8 +56,7 @@ cd build
 python3 tests.py
 ```
 
-## Output format
-
+## Output format example
 ```
 > ./quadratic_solver 1 -2 -3
 (1,-2,-3) => (3.000000, -1.000000) Xmin=-1.000000
