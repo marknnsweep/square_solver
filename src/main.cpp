@@ -1,5 +1,3 @@
-#include "Application.hpp"
-
 #include <iostream>
 #include <vector>
 
