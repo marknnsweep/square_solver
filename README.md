@@ -56,6 +56,25 @@ cd build
 python3 tests.py
 ```
 
+## Output format
+
+```
+> ./quadratic_solver 1 -2 -3
+(1,-2,-3) => (3.000000, -1.000000) Xmin=-1.000000
+
+> ./quadratic_solver 0 0 0
+(0,0,0) => All roots No Xmin
+
+> ./quadratic_solver 0 0 1
+(0,0,1) => No roots No Xmin
+
+> ./quadratic_solver 0 1 1
+(0,1,1) => (-1.000000) No Xmin
+
+> ./quadratic_solver qwerty 1 1
+(,1,1) => invalid input
+```
+
 ## Project Structure
 ```
 quadratic_solver/
