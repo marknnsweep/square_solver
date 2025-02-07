@@ -41,7 +41,7 @@ QuadraticEquationSolver::solve(const Data &stringCoeff) const {
   double discriminant = sum * sum - 4 * product;
   if (discriminant < 0) {
     // no roots, xmin exists
-    return Solution(coefficients, Solution::Xmin(-sum / 2),
+    return Solution(coefficients, Solution::Xmin(sum / 2),
                     Solution::NoRoots());
   }
 
@@ -49,7 +49,7 @@ QuadraticEquationSolver::solve(const Data &stringCoeff) const {
   double root1 = (sum + sqrt_d) / 2;
   double root2 = (sum - sqrt_d) / 2;
 
-  double xmin = -sum / 2;
+  double xmin = sum / 2;
 
   return Solution(coefficients, root1, root2, xmin);
 }
